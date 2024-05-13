@@ -8,6 +8,7 @@ class ProductCommentsPage extends StatefulWidget {
   @override
   _ProductCommentsPageState createState() => _ProductCommentsPageState();
 }
+
 class _ProductCommentsPageState extends State<ProductCommentsPage> {
   List<Map<String, dynamic>> _comments = [];
 
@@ -21,8 +22,11 @@ class _ProductCommentsPageState extends State<ProductCommentsPage> {
     try {
       final response = await Dio().get('$api/api/product_comment/');
       if (response.statusCode == 200) {
-        final List<Map<String, dynamic>> allComments = List<Map<String, dynamic>>.from(response.data);
-        final filteredComments = allComments.where((comment) => comment['email_user'] == email_user).toList();
+        final List<Map<String, dynamic>> allComments =
+            List<Map<String, dynamic>>.from(response.data);
+        final filteredComments = allComments
+            .where((comment) => comment['email_user'] == email_user)
+            .toList();
         setState(() {
           _comments = filteredComments;
         });
@@ -38,8 +42,11 @@ class _ProductCommentsPageState extends State<ProductCommentsPage> {
     try {
       final response = await Dio().get('$api/api/product/');
       if (response.statusCode == 200) {
-        final List<Map<String, dynamic>> products = List<Map<String, dynamic>>.from(response.data['rows']);
-        final productInfo = products.firstWhere((product) => product['id_product'] == productId, orElse: () => {});
+        final List<Map<String, dynamic>> products =
+            List<Map<String, dynamic>>.from(response.data['rows']);
+        final productInfo = products.firstWhere(
+            (product) => product['id_product'] == productId,
+            orElse: () => {});
         return productInfo;
       } else {
         throw Exception('Failed to load product info');
@@ -94,6 +101,7 @@ class _ProductCommentsPageState extends State<ProductCommentsPage> {
       // Обработка ошибки, например, показать сообщение пользователю
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,7 +127,8 @@ class _ProductCommentsPageState extends State<ProductCommentsPage> {
                       return Text('Ошибка загрузки информации о продукте');
                     } else {
                       final productInfo = snapshot.data ?? {};
-                      return Text('Продукт: ${productInfo['name_product'] ?? 'Неизвестно'}');
+                      return Text(
+                          '${productInfo['name_product'] ?? 'Неизвестно'}');
                     }
                   },
                 ),

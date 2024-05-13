@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mebel_shop/Page/CartPage.dart';
+import 'package:mebel_shop/Page/ChangePasswordPage.dart';
 import 'package:mebel_shop/Page/LoginPage.dart';
 import 'package:mebel_shop/Page/OrdersPage.dart';
 import 'package:mebel_shop/Page/ProductCommentsPage.dart';
@@ -9,6 +10,7 @@ import 'package:mebel_shop/Page/UserProfileEditPage.dart';
 import 'package:mebel_shop/Service/AuthService.dart';
 import 'package:mebel_shop/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -31,7 +33,8 @@ class _ProfilePageState extends State<ProfilePage> {
       var response = await Dio().get('$api/api/user_profile/$email_user');
       if (response.statusCode == 200) {
         setState(() {
-          userAvatarUrl = '$api/user_photo/${response.data['image_user_profile'] ?? 'https://via.placeholder.com/150'}';
+          userAvatarUrl =
+              '$api/user_photo/${response.data['image_user_profile'] ?? 'https://via.placeholder.com/150'}';
           firstName = response.data['first_name_user'] ?? '';
           secondName = response.data['second_name_user'] ?? '';
         });
@@ -48,7 +51,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await prefs.clear(); // Очистка всех данных
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginPage()),
-          (Route<dynamic> route) => false,
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -99,7 +102,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 '${firstName.isNotEmpty ? firstName : ''} ${secondName.isNotEmpty ? secondName : ''}',
                 style: TextStyle(fontSize: 20),
               ),
-
               Text(
                 email_user!,
                 style: TextStyle(fontSize: 20),
@@ -112,23 +114,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => UserProfileEditPage()),
+                        MaterialPageRoute(
+                            builder: (context) => UserProfileEditPage()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Color(0xFF1E40AF),
                     ),
                     child: Text('Изменить данные'),
                   ),
-
                   ElevatedButton(
                     onPressed: () {
-                      // Действия при нажатии на кнопку "Смена пароля"
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ChangePasswordPage()),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Color(0xFF1E40AF),
                     ),
                     child: Text('Смена пароля'),
                   ),
@@ -136,6 +142,12 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               SizedBox(height: 20),
               Divider(),
+              ListTile(
+                leading: Icon(Icons
+                    .message), // You can use any icon that represents Telegram
+                title: Text('Telegram поддержка'),
+                onTap: () => _launchTelegramChannel('https://t.me/akurdelov'),
+              ),
               ListTile(
                 leading: Icon(Icons.list),
                 title: Text('Заказы'),
@@ -162,14 +174,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ProductCommentsPage()),
-                  );                },
+                    MaterialPageRoute(
+                        builder: (context) => ProductCommentsPage()),
+                  );
+                },
               ),
-
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _launchTelegramChannel(String url) async {
+    if (!await launch(url)) {
+      // If direct launch fails, try launching the URL in a web browser.
+      final urlFallback = Uri.encodeFull(url);
+      if (!await launch(urlFallback)) {
+        // If both attempts fail, log the error.
+        print('Не удается открыть $url');
+      }
+    }
   }
 }

@@ -21,11 +21,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
         // Успешно зарегистрирован, отправляем запрос на создание корзины
         await createCart(email, token);
         return true;
-
       } else {
         // Если токен не получен, обработка ошибки регистрации
         return false;
-
       }
     } catch (e) {
       print('Error during registration and cart creation: $e');
@@ -39,7 +37,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         '$api/api/user_profile/registration',
         data: {"email_user": email, "password_user": password},
         options: Options(
-          headers: {"accept": "application/json", "Content-Type": "application/json"},
+          headers: {
+            "accept": "application/json",
+            "Content-Type": "application/json"
+          },
         ),
       );
       if (response.statusCode == 200) {
@@ -80,10 +81,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Мебельный магазин'),
-        centerTitle: true,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -99,6 +96,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               decoration: InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
               ),
             ),
             SizedBox(height: 10),
@@ -107,13 +105,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
               decoration: InputDecoration(
                 labelText: 'Пароль',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
             ),
             SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white, backgroundColor: Colors.blue, // foreground
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF1E40AF), // foreground
               ),
               onPressed: () async {
                 String email = emailController.text;

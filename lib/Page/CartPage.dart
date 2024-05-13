@@ -25,12 +25,17 @@ class _CartPageState extends State<CartPage> {
     String? token = prefs.getString('token');
 
     // Найти продукт в списке по ID и обновить его количество
-    int productIndex = cartProducts.indexWhere((p) => p.product.id == productId);
+    int productIndex =
+        cartProducts.indexWhere((p) => p.product.id == productId);
     if (productIndex != -1) {
       CartProduct cartProduct = cartProducts[productIndex];
       int? currentCount = cartProduct.countCartProduct;
 
-      currentCount = isIncrement ? currentCount + 1 : (currentCount > 1 ? currentCount - 1 : 1); // Предотвращаем уход в минус
+      currentCount = isIncrement
+          ? currentCount + 1
+          : (currentCount > 1
+              ? currentCount - 1
+              : 1); // Предотвращаем уход в минус
 
       try {
         await Dio().put(
@@ -56,6 +61,30 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  Future<void> removeProductFromCart(int cartProductId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    try {
+      await Dio().delete(
+        '$api/api/cart/$cartProductId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      setState(() {
+        cartProducts
+            .removeWhere((element) => element.idCartProduct == cartProductId);
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
 
   double calculateTotal() {
     double total = 0.0;
@@ -66,20 +95,18 @@ class _CartPageState extends State<CartPage> {
     return total;
   }
 
-
-
   Future<void> fetchCartProducts() async {
     try {
       var response = await Dio().get('$api/api/cart/$email_user');
       var productsRaw = response.data['cart']['cart_products'] as List;
       setState(() {
-        cartProducts = productsRaw.map((json) => CartProduct.fromJson(json)).toList();
+        cartProducts =
+            productsRaw.map((json) => CartProduct.fromJson(json)).toList();
       });
     } catch (e) {
       print(e);
     }
   }
-
 
   int calculateTotalItems() {
     int totalItems = 0;
@@ -88,7 +115,6 @@ class _CartPageState extends State<CartPage> {
     }
     return totalItems;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,117 +125,146 @@ class _CartPageState extends State<CartPage> {
       appBar: AppBar(
         title: Text("Корзина"),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: cartProducts.length,
-              itemBuilder: (context, index) {
-                final cartProduct = cartProducts[index];
-                final product = cartProduct.product; // Получаем продукт из корзины
-                final imageUrl = '$api/${product.imageUrl}';
+      body: cartProducts.isEmpty
+          ? Center(
+              child: Text(
+                'Корзина пуста',
+                style: TextStyle(fontSize: 20),
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: cartProducts.length,
+                    itemBuilder: (context, index) {
+                      final cartProduct = cartProducts[index];
+                      final product =
+                          cartProduct.product; // Получаем продукт из корзины
+                      final imageUrl = '$api/${product.imageUrl}';
 
-                return Card(
-                  margin: EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(imageUrl),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListTile(
-                          title: Text(product.name),
-                          subtitle: Text('${product.price} ₽'),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Column(
+                      return Card(
+                        margin: EdgeInsets.all(8.0),
+                        child: Row(
                           children: [
                             IconButton(
-                              icon: Icon(Icons.add),
-                              color: cartProduct.countCartProduct < cartProduct.product.countProduct! ? Colors.blue : Colors.grey,
+                              icon: Icon(Icons.delete),
+                              color: Colors.black,
                               onPressed: () {
-                                if (cartProduct.countCartProduct < cartProduct.product.countProduct!) {
-                                  updateProductCount(cartProduct.product.id, true);
-                                }
+                                removeProductFromCart(
+                                    cartProduct.idCartProduct);
                               },
                             ),
-                            Text('${cartProduct.countCartProduct}'),
-                            IconButton(
-                              icon: Icon(Icons.remove),
-                              color: cartProduct.countCartProduct > 1 ? Colors.blue : Colors.grey,
-                              onPressed: () {
-                                if (cartProduct.countCartProduct > 1) {
-                                  updateProductCount(cartProduct.product.id, false);
-                                }
-                              },
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: NetworkImage(imageUrl),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
-
+                            Expanded(
+                              child: ListTile(
+                                title: Text(product.name),
+                                subtitle: Text('${product.price} ₽'),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Column(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.add),
+                                    color: cartProduct.countCartProduct <
+                                            cartProduct.product.countProduct!
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                    onPressed: () {
+                                      if (cartProduct.countCartProduct <
+                                          cartProduct.product.countProduct!) {
+                                        updateProductCount(
+                                            cartProduct.product.id, true);
+                                      }
+                                    },
+                                  ),
+                                  Text('${cartProduct.countCartProduct}'),
+                                  IconButton(
+                                    icon: Icon(Icons.remove),
+                                    color: cartProduct.countCartProduct > 1
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                    onPressed: () {
+                                      if (cartProduct.countCartProduct > 1) {
+                                        updateProductCount(
+                                            cartProduct.product.id, false);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  color: Colors.grey[200],
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Товаров: $totalItems шт.',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Итого: ${total.toStringAsFixed(2)} ₽',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity, // Кнопка на всю ширину экрана
+                        child: ElevatedButton(
+                          onPressed: cartProducts.isEmpty
+                              ? null // Заблокировать кнопку при пустой корзине
+                              : () {
+                                  double total =
+                                      calculateTotal(); // Убедитесь, что это вызывается перед Navigator
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CheckoutPage(
+                                        cartProducts: cartProducts,
+                                        total: total,
+                                      ),
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Color(0xFF1E40AF), // Цвет текста
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                          ),
+                          child: Text('Оформить заказ',
+                              style: TextStyle(fontSize: 18)),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-
-          ),
-          Container(
-            color: Colors.grey[200],
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Товаров: $totalItems шт.',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Итого: ${total.toStringAsFixed(2)} ₽',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity, // Кнопка на всю ширину экрана
-                  child: ElevatedButton(
-                    onPressed: () {
-                      double total = calculateTotal(); // Убедитесь, что это вызывается перед Navigator
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => CheckoutPage(cartProducts: cartProducts, total: total)),
-                      );
-
-
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white, backgroundColor: Colors.blue, // Цвет текста
-                      padding: EdgeInsets.symmetric(vertical: 12.0),
-                    ),
-                    child: Text(
-                        'Оформить заказ', style: TextStyle(fontSize: 18)),
-                  ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

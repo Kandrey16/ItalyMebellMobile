@@ -1,10 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:mebel_shop/Models/Category.dart';
 import 'package:mebel_shop/Page/ProductsByCategoryPage.dart';
-import 'dart:convert';
-
 import 'package:mebel_shop/Service/AuthService.dart';
 
 class CategoriesPage extends StatefulWidget {
@@ -31,8 +28,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         setState(() {
-          categories = data.map((category) => Category.fromJson(category)).toList();
-          filteredCategories = List.from(categories); // Используем filteredCategories для вывода всех категорий с самого начала
+          categories =
+              data.map((category) => Category.fromJson(category)).toList();
+          filteredCategories = List.from(
+              categories); // Используем filteredCategories для вывода всех категорий с самого начала
         });
       } else {
         throw Exception('Failed to load categories');
@@ -46,7 +45,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
   void filterCategories(String query) {
     setState(() {
       filteredCategories = categories
-          .where((category) => category.name.toLowerCase().contains(query.toLowerCase()))
+          .where((category) =>
+              category.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -59,18 +59,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TextField(
-              onChanged: (query) {
-                filterCategories(query);
-              },
-              decoration: InputDecoration(
-                labelText: 'Поиск категории',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
           Expanded(
             child: GridView.builder(
               padding: EdgeInsets.all(8.0),
@@ -92,7 +80,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 }
 
-
 class CategoryCard extends StatelessWidget {
   final Category category;
 
@@ -105,26 +92,45 @@ class CategoryCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductsByCategoryPage(categoryId: category.id,),
+            builder: (context) =>
+                ProductsByCategoryPage(categoryId: category.id),
           ),
         );
       },
       child: Card(
+        clipBehavior: Clip.antiAlias,
         elevation: 4.0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          alignment: Alignment.center, // Выравнивание по центру
           children: <Widget>[
-            Image.network(
-              '$api/category_photo/${category.image}',
-              width: 100.0,
-              height: 100.0,
-              fit: BoxFit.cover,
+            Positioned.fill(
+              child: Image.network(
+                '$api/category_photo/${category.image}',
+                fit: BoxFit.cover, // Заполняем весь размер карточки
+              ),
             ),
-            SizedBox(height: 8.0),
+            Container(
+              // Оверлей который не только улучшает читаемость текста, но и добавляет стильный дизайн элемент
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.1),
+                    Colors.black.withOpacity(0.5),
+                  ],
+                ),
+              ),
+            ),
             Text(
               category.name,
-              style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

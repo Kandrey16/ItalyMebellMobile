@@ -2,14 +2,17 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:mebel_shop/Models/CartProduct.dart';  // Make sure this import is correct
+import 'package:mebel_shop/Models/CartProduct.dart'; // Make sure this import is correct
+import 'package:mebel_shop/Models/DeliveryMethod.dart';
+import 'package:mebel_shop/Models/PaymentMethod.dart';
+import 'package:mebel_shop/Page/BottomNavigationPage.dart';
 import 'package:mebel_shop/Page/ProductsPage.dart';
 import 'package:mebel_shop/Service/AuthService.dart';
 import 'package:mebel_shop/main.dart';
 
 class CheckoutPage extends StatefulWidget {
-  final List<CartProduct> cartProducts;  // This should be List<CartProduct>
-  final double total;
+  final List<CartProduct> cartProducts; // This should be List<CartProduct>
+  late final double total;
 
   CheckoutPage({required this.cartProducts, required this.total});
 
@@ -23,6 +26,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _floorController = TextEditingController();
   final _codeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  int _selectedDeliveryMethod = -1; // по умолчанию ни один не выбран
+  int _selectedPaymentMethod = -1; // по умолчанию ни один не выбран
+  double _deliveryPrice = 0.0;
 
   @override
   void dispose() {
@@ -65,6 +71,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           "id_cart_product": cartProduct.idCartProduct,
         };
       }).toList(),
+      "payment_method": {
+        "id_payment_method":
+            _selectedPaymentMethod, // Pass the selected payment method ID here
+      },
+      "order_delivery": {
+        "id_order_delivery":
+            _selectedDeliveryMethod, // Pass the selected delivery method ID here
+      },
+      "order_status": {
+        "id_order_status": 2, // This remains constant
+      }
     };
 
     try {
@@ -78,6 +95,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ),
         data: orderData,
       );
+      int _selectedPaymentMethod = -1; // по умолчанию ни один не выбран
 
       if (response.statusCode == 200) {
         showDialog(
@@ -91,8 +109,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   Navigator.of(context).pop(); // Close the dialog
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => ProductsPage()), // Assuming ProductsPage is correctly imported and available
-                        (Route<dynamic> route) => false, // This removes all the routes beneath the new route
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            BottomNavigationPage()), // Assuming ProductsPage is correctly imported and available
+                    (Route<dynamic> route) =>
+                        false, // This removes all the routes beneath the new route
                   );
                 },
                 child: Text("OK"),
@@ -100,7 +121,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ],
           ),
         );
-
       } else {
         throw Exception('Failed to create order.');
       }
@@ -108,6 +128,39 @@ class _CheckoutPageState extends State<CheckoutPage> {
       print(e);
     }
   }
+
+  Future<List<PaymentMethod>> fetchPaymentMethods() async {
+    try {
+      Dio dio = Dio();
+      Response response = await dio.get('$api/api/payment_method/');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data;
+        return data.map((json) => PaymentMethod.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load payment methods');
+      }
+    } catch (e) {
+      throw Exception('Failed to connect to server');
+    }
+  }
+
+  Future<List<DeliveryMethod>> fetchDeliveryMethods() async {
+    try {
+      Dio dio = Dio();
+      Response response = await dio.get('$api/api/order_delivery/');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data;
+        return data.map((json) => DeliveryMethod.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load delivery methods');
+      }
+    } catch (e) {
+      throw Exception('Failed to connect to server');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +188,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           fit: BoxFit.cover,
                         ),
                         title: Text(cartProduct.product.name),
-                        subtitle: Text('Количество: ${cartProduct.countCartProduct}'),
+                        subtitle:
+                            Text('Количество: ${cartProduct.countCartProduct}'),
                       );
                     },
                   ),
@@ -150,7 +204,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             decoration: InputDecoration(
                               labelText: 'Адрес доставки',
                             ),
-                            validator: (value) => value!.isEmpty ? 'Поле не может быть пустым' : null,
+                            validator: (value) => value!.isEmpty
+                                ? 'Поле не может быть пустым'
+                                : null,
                           ),
                           TextFormField(
                             controller: _entryController,
@@ -170,6 +226,86 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               labelText: 'Код домофона',
                             ),
                           ),
+                          SizedBox(height: 20),
+                          Text(
+                            'Способ оплаты',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          FutureBuilder<List<PaymentMethod>>(
+                            future:
+                                fetchPaymentMethods(), // функция для загрузки данных о способах оплаты
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator(); // показать индикатор загрузки пока данные загружаются
+                              } else if (snapshot.hasError) {
+                                return Text(
+                                    'Ошибка загрузки данных о способах оплаты');
+                              } else {
+                                // данные успешно загружены, показать радиокнопки
+                                List<PaymentMethod> paymentMethods =
+                                    snapshot.data!;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: paymentMethods.map((paymentMethod) {
+                                    return RadioListTile(
+                                      title: Text(paymentMethod.name),
+                                      value: paymentMethod.id,
+                                      groupValue: _selectedPaymentMethod,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedPaymentMethod = value!;
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                );
+                              }
+                            },
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            'Способ доставки',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          SizedBox(height: 10),
+                          FutureBuilder(
+                            future: fetchDeliveryMethods(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              } else if (snapshot.hasError) {
+                                return Text(
+                                    'Ошибка загрузки данных о способах доставки');
+                              } else {
+                                List<DeliveryMethod> deliveryMethods =
+                                    snapshot.data!;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children:
+                                      deliveryMethods.map((deliveryMethod) {
+                                    return RadioListTile(
+                                      title: Text(
+                                          '${deliveryMethod.name} - ${deliveryMethod.price} ₽'),
+                                      value: deliveryMethod.id,
+                                      groupValue: _selectedDeliveryMethod,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedDeliveryMethod = value!;
+                                          // Update the total price based on the selected delivery method
+                                          _deliveryPrice =
+                                              deliveryMethod.price.toDouble();
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                );
+                              }
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -186,7 +322,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Итоговая сумма: ${widget.total.toStringAsFixed(2)} ₽',
+                    'Итоговая сумма: ${(widget.total + _deliveryPrice).toStringAsFixed(2)} ₽',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -196,14 +332,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (_validateAndSave()) {
-                        submitOrder();  // Вызов функции отправки заказа
+                        widget.total + _deliveryPrice;
+                        submitOrder(); // Вызов функции отправки заказа
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white, backgroundColor: Colors.blue, // Цвет текста
+                      foregroundColor: Colors.white,
+                      backgroundColor: Color(0xFF1E40AF), // Цвет текста
                       padding: EdgeInsets.symmetric(vertical: 12.0),
                     ),
-                    child: Text('Подтвердить заказ', style: TextStyle(fontSize: 18)),
+                    child: Text('Подтвердить заказ',
+                        style: TextStyle(fontSize: 18)),
                   ),
                 ),
               ],

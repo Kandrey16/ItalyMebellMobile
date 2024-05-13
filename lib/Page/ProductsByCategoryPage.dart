@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:mebel_shop/Models/Product.dart';
 import 'package:mebel_shop/Page/ProductDetailsPage.dart';
 import 'package:mebel_shop/Service/AuthService.dart';
+import 'package:mebel_shop/Widgets/ProductCard.dart';
 
 class ProductsByCategoryPage extends StatefulWidget {
   final int categoryId;
 
-  const ProductsByCategoryPage({Key? key, required this.categoryId}) : super(key: key);
+  const ProductsByCategoryPage({Key? key, required this.categoryId})
+      : super(key: key);
 
   @override
   State<ProductsByCategoryPage> createState() => _ProductsByCategoryPageState();
@@ -24,9 +26,11 @@ class _ProductsByCategoryPageState extends State<ProductsByCategoryPage> {
 
   Future<void> fetchProductsByCategory(int categoryId) async {
     try {
-      var response = await Dio().get('$api/api/product/', queryParameters: {"id_category": categoryId});
+      var response = await Dio().get('$api/api/product/',
+          queryParameters: {"id_category": categoryId});
       var productData = response.data['rows'] as List;
-      List<Product> productList = productData.map((json) => Product.fromJson(json)).toList();
+      List<Product> productList =
+          productData.map((json) => Product.fromJson(json)).toList();
       setState(() {
         products = productList;
       });
@@ -54,62 +58,16 @@ class _ProductsByCategoryPageState extends State<ProductsByCategoryPage> {
           final product = products[index];
           final imageUrl = '$api/${product.imageUrl}';
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailsPage(product: product),
-                ),
-              );
-            },
-            child: Card(
-              elevation: 5,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15),
-                      ),
-                      child: Image.network(
-                        imageUrl,
-                        width: MediaQuery.of(context).size.width / 2 - 10, // Ширина изображения равна половине ширины экрана
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.name,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          '${product.price} ₽',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        ),
-                        Text(
-                          'Подробнее',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
+          return ProductCard(
+            product: product,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProductDetailsPage(product: product),
               ),
             ),
+            imageUrl: imageUrl,
           );
-
         },
       ),
     );

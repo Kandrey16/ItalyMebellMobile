@@ -17,17 +17,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Мебельный магазин'),
-        centerTitle: true,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'Авторизация',
+              'Войти в систему',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
@@ -36,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
               ),
             ),
             SizedBox(height: 10),
@@ -44,13 +41,15 @@ class _LoginPageState extends State<LoginPage> {
               decoration: InputDecoration(
                 labelText: 'Пароль',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
             ),
             SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white, backgroundColor: Colors.blue, // foreground
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF1E40AF), // foreground
               ),
               onPressed: () async {
                 String email = emailController.text;
@@ -60,9 +59,11 @@ class _LoginPageState extends State<LoginPage> {
                 if (token != null) {
                   print("Авторизация прошла успешно, токен: $token");
                   // Переход на страницу товаров
-                  Navigator.pushReplacement( // Используйте pushReplacement, чтобы предотвратить возврат на страницу входа
+                  Navigator.pushReplacement(
+                    // Используйте pushReplacement, чтобы предотвратить возврат на страницу входа
                     context,
-                    MaterialPageRoute(builder: (context) => BottomNavigationPage()),
+                    MaterialPageRoute(
+                        builder: (context) => BottomNavigationPage()),
                   );
                 } else {
                   print("Ошибка авторизации");

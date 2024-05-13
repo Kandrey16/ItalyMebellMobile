@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-String api = "http://192.168.1.69:5000";
+String api = "http://192.168.0.138:5000";
 
 class AuthService {
   Dio dio = new Dio();
@@ -30,7 +30,10 @@ class AuthService {
         '$api/api/user_profile/registration',
         data: {"email_user": email, "password_user": password},
         options: Options(
-          headers: {"accept": "application/json", "Content-Type": "application/json"},
+          headers: {
+            "accept": "application/json",
+            "Content-Type": "application/json"
+          },
         ),
       );
       if (response.statusCode == 200) {
@@ -68,14 +71,16 @@ class AuthService {
     }
   }
 
-
   Future<String?> login(String email, String password) async {
     try {
       Response response = await dio.post(
         '$api/api/user_profile/login',
         data: {"email_user": email, "password_user": password},
         options: Options(
-          headers: {"accept": "application/json", "Content-Type": "application/json"},
+          headers: {
+            "accept": "application/json",
+            "Content-Type": "application/json"
+          },
         ),
       );
       if (response.statusCode == 200) {
@@ -83,7 +88,6 @@ class AuthService {
         await prefs.setString('token', response.data["token"]);
         await prefs.setString('email_user', email);
         return response.data["token"];
-
       }
       return null;
     } catch (e) {

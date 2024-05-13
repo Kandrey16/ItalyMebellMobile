@@ -12,7 +12,7 @@ class BottomNavigationPage extends StatefulWidget {
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   int _selectedIndex = 0;
-  static  List<Widget> _widgetOptions = <Widget>[
+  static List<Widget> _widgetOptions = <Widget>[
     ProductsPage(),
     CategoriesPage(),
     ProfilePage(), // Убрали const перед ProfilePage()
@@ -46,7 +46,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Color(0xFF1E40AF),
         onTap: _onItemTapped,
       ),
     );

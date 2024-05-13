@@ -27,11 +27,27 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
     loadUserProfile();
   }
 
-  Future<void> loadUserProfile() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    userEmail = prefs.getString('email_user');
-    // Load user data here and populate controllers if you want to show existing values
+Future<void> loadUserProfile() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  userEmail = prefs.getString('email_user');
+  if (userEmail != null) {
+    try {
+      var response = await Dio().get('$api/api/user_profile/$userEmail');
+      if (response.statusCode == 200) {
+        setState(() {
+          firstNameController.text = response.data['first_name_user'] ?? '';
+          lastNameController.text = response.data['second_name_user'] ?? '';
+          phoneNumberController.text = response.data['phone_number_client'] ?? '';
+        });
+      } else {
+        print('Ошибка получения профиля: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка при выполнении запроса: $e');
+    }
   }
+}
+
 
   Future<void> updateUserProfile() async {
     if (!_formKey.currentState!.validate() || userEmail == null) return;
@@ -45,7 +61,8 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
 
     // Если выбран файл изображения, добавляем его в данные формы
     if (_imageFile != null) {
-      data["image_user_profile"] = await MultipartFile.fromFile(_imageFile!.path, filename: fileName);
+      data["image_user_profile"] =
+          await MultipartFile.fromFile(_imageFile!.path, filename: fileName);
     }
 
     FormData formData = FormData.fromMap(data);
@@ -64,12 +81,8 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
       );
 
       if (response.statusCode == 200) {
-
-      } else {
-
-      }
-    } catch (e) {
-    }
+      } else {}
+    } catch (e) {}
   }
 
   Future<void> pickImage() async {
@@ -86,40 +99,66 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
         title: Text("Редактировать профиль"),
       ),
       body: SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               if (_imageFile != null)
-                Image.file(File(_imageFile!.path), height: 200),
-              TextButton(
-                onPressed: pickImage,
-                child: Text("Изменить фото"),
-                style: TextButton.styleFrom(
-                  primary: Colors.blue,
+                Center(
+                  child: SizedBox(
+                    height: 200,
+                    child:
+                        Image.file(File(_imageFile!.path), fit: BoxFit.cover),
+                  ),
+                ),
+              Center(
+                // Надпись "Изменить фото" в центре
+                child: TextButton(
+                  onPressed: pickImage,
+                  child: Text("Изменить фото"),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Color(0xFF1E40AF),
+                  ),
                 ),
               ),
+              SizedBox(height: 16.0),
               TextFormField(
                 controller: firstNameController,
                 decoration: InputDecoration(labelText: 'Имя'),
-                validator: (value) => value!.isEmpty ? "Пожалуйста, введите ваше имя" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Пожалуйста, введите ваше имя" : null,
               ),
+              SizedBox(height: 16.0),
               TextFormField(
                 controller: lastNameController,
                 decoration: InputDecoration(labelText: 'Фамилия'),
-                validator: (value) => value!.isEmpty ? "Пожалуйста, введите вашу фамилию" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Пожалуйста, введите вашу фамилию" : null,
               ),
+              SizedBox(height: 16.0),
               TextFormField(
                 controller: phoneNumberController,
                 decoration: InputDecoration(labelText: 'Номер телефона'),
-                validator: (value) => value!.isEmpty ? "Пожалуйста, введите ваш номер телефона" : null,
+                validator: (value) => value!.isEmpty
+                    ? "Пожалуйста, введите ваш номер телефона"
+                    : null,
               ),
+              SizedBox(height: 24.0),
               ElevatedButton(
                 onPressed: updateUserProfile,
-                child: Text("Обновить профиль"),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blue,
-                  onPrimary: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 10.0),
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF1E40AF),
+                  alignment: Alignment.center, // Выравнивание текста по центру
+                ),
+                child: Center(
+                  child: Text(
+                    "Обновить профиль",
+                    style: TextStyle(fontSize: 18.0),
+                  ),
                 ),
               ),
             ],

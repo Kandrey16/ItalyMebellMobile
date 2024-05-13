@@ -6,6 +6,7 @@ import 'package:mebel_shop/Page/CartPage.dart';
 import 'package:mebel_shop/Page/ProductDetailsPage.dart';
 import 'package:mebel_shop/Page/ProfilePage.dart';
 import 'package:mebel_shop/Service/AuthService.dart';
+import 'package:mebel_shop/Widgets/ProductCard.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({Key? key}) : super(key: key);
@@ -19,6 +20,22 @@ class _ProductsPageState extends State<ProductsPage> {
   List<Product> allProducts = [];
   List<Product> filteredProducts = [];
   int? selectedCategoryId;
+  TextEditingController searchController = TextEditingController();
+
+  void searchProducts(String searchText) {
+    setState(() {
+      if (searchText.isEmpty) {
+        // If search text is empty, show all products
+        filteredProducts = allProducts;
+      } else {
+        // Filter products based on search text
+        filteredProducts = allProducts
+            .where((product) =>
+                product.name.toLowerCase().contains(searchText.toLowerCase()))
+            .toList();
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -45,7 +62,8 @@ class _ProductsPageState extends State<ProductsPage> {
     try {
       var response = await Dio().get('$api/api/product/');
       var productData = response.data['rows'] as List;
-      List<Product> productList = productData.map((json) => Product.fromJson(json)).toList();
+      List<Product> productList =
+          productData.map((json) => Product.fromJson(json)).toList();
       setState(() {
         allProducts = productList;
         filteredProducts = productList;
@@ -57,9 +75,11 @@ class _ProductsPageState extends State<ProductsPage> {
 
   Future<void> fetchProductsByCategory(int categoryId) async {
     try {
-      var response = await Dio().get('$api/api/product/', queryParameters: {"id_category": categoryId});
+      var response = await Dio().get('$api/api/product/',
+          queryParameters: {"id_category": categoryId});
       var productData = response.data['rows'] as List;
-      List<Product> productList = productData.map((json) => Product.fromJson(json)).toList();
+      List<Product> productList =
+          productData.map((json) => Product.fromJson(json)).toList();
       setState(() {
         filteredProducts = productList;
         selectedCategoryId = categoryId;
@@ -69,13 +89,34 @@ class _ProductsPageState extends State<ProductsPage> {
     }
   }
 
+  Widget _buildRatingStars(double rating) {
+    List<Widget> stars = [];
+    for (int i = 0; i < 5; i++) {
+      IconData iconData = rating >= i + 1 ? Icons.star : Icons.star_border;
+      stars.add(Icon(iconData,
+          color: Colors.yellow[700],
+          size: 18)); // размер звезд подбирается под дизайн
+    }
+    return Row(children: stars);
+  }
+
   @override
   Widget build(BuildContext context) {
-    var width = MediaQuery.of(context).size.width / 2 - 10; // Вычитаем 10 для отступов
+    var width =
+        MediaQuery.of(context).size.width / 2 - 10; // Вычитаем 10 для отступов
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Товары'),
+        elevation: 0,
+        title: TextField(
+          controller: searchController,
+          onChanged: (value) => searchProducts(value),
+          decoration: InputDecoration(
+            hintText: 'Поиск товаров...',
+            border: InputBorder.none,
+            prefixIcon: Icon(Icons.search),
+          ),
+        ),
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.shopping_cart),
@@ -83,20 +124,12 @@ class _ProductsPageState extends State<ProductsPage> {
               // Открывает страницу профиля
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => CartPage()), // Замените на актуальное имя вашей страницы профиля
+                MaterialPageRoute(
+                    builder: (context) =>
+                        CartPage()), // Замените на актуальное имя вашей страницы профиля
               );
             },
           ),
-         /* IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              // Открывает страницу профиля
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilePage()), // Замените на актуальное имя вашей страницы профиля
-              );
-            },
-          ),*/
         ],
       ),
       body: Column(
@@ -112,21 +145,26 @@ class _ProductsPageState extends State<ProductsPage> {
                     if (selectedCategoryId == categories[index].id) {
                       fetchAllProducts(); // Загрузить все товары
                     } else {
-                      fetchProductsByCategory(categories[index].id); // Загрузить товары по выбранной категории
+                      fetchProductsByCategory(categories[index]
+                          .id); // Загрузить товары по выбранной категории
                     }
                   },
                   child: Container(
                     margin: EdgeInsets.all(4.0),
-                    padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
                     decoration: BoxDecoration(
-                      color: Colors.blue[700],
+                      color: Color(0xFF1E40AF),
                       borderRadius: BorderRadius.circular(20),
-                      border: selectedCategoryId == categories[index].id ? Border.all(color: Colors.amber, width: 2) : null,
+                      border: selectedCategoryId == categories[index].id
+                          ? Border.all(color: Colors.yellow, width: 2)
+                          : null,
                     ),
                     child: Center(
                       child: Text(
                         categories[index].name,
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -148,62 +186,17 @@ class _ProductsPageState extends State<ProductsPage> {
                 final product = filteredProducts[index];
                 final imageUrl = '$api/${product.imageUrl}';
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailsPage(product: product),
-                      ),
-                    );
-                  },
-                  child: Card(
-                    elevation: 5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(15),
-                              topRight: Radius.circular(15),
-                            ),
-                            child: Image.network(
-                              imageUrl,
-                              width: width, // Ширина изображения равна половине ширины экрана
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product.name,
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                '${product.price} ₽',
-                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                              ),
-                              Text(
-                                'Подробнее',
-                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                              )
-                            ],
-                          ),
-                        ),
-                      ],
+                return ProductCard(
+                  product: product,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProductDetailsPage(product: product),
                     ),
                   ),
+                  imageUrl: imageUrl,
                 );
-
               },
             ),
           ),
